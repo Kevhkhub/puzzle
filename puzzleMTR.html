@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>港鐵九宮格解密挑戰</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f4f8;
+            color: #1a2a3a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .game-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 900px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* Sidebar info panel */
+        .sidebar {
+            background: linear-gradient(135deg, #0f2547 0%, #1b3d6d 100%);
+            color: #ffffff;
+            width: 320px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .mtr-logo-simulation {
+            width: 36px;
+            height: 36px;
+            border: 4px solid #e2231a;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .mtr-logo-simulation::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 4px;
+            background-color: #e2231a;
+        }
+        .mtr-logo-simulation::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 14px;
+            background-color: #e2231a;
+            box-shadow: -6px 0 #e2231a, 6px 0 #e2231a;
+            top: 4px;
+        }
+
+        .logo-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .logo-text p {
+            font-size: 11px;
+            color: #a0aec0;
+            text-transform: uppercase;
+        }
+
+        .mission-box {
+            background: rgba(255, 255, 255, 0.08);
+            border-left: 4px solid #ffd700;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+        .mission-box h3 {
+            color: #ffd700;
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+        .mission-box p {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #e2e8f0;
+        }
+
+        .timer-section {
+            text-align: center;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .timer-label {
+            font-size: 12px;
+            color: #cbd5e1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .timer-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff4d4d;
+            text-shadow: 0 0 10px rgba(255,77,77,0.3);
+        }
+        .timer-display.warning {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.4; }
+        }
+
+        .btn {
+            background: #ffd700;
+            color: #0f2547;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(255,215,0,0.2);
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #ffea60;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+            box-shadow: none;
+        }
+        .btn.secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none !important;
+        }
+
+        .tile .hint-number {
+            display: none;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(226, 35, 26, 0.95); /* 港鐵紅 */
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            border: 2px solid white;
+            z-index: 5;
+        }
+
+        .board-show-hint .tile .hint-number {
+            display: flex;
+        }
+
+        /* Main Game Area */
+        .main-game {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #fafbfc;
+            position: relative;
+        }
+
+        .preview-image-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .preview-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .preview-img {
+            width: 150px;
+            height: 150px;
+            border: 3px solid #cbd5e1;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* The 3x3 Puzzle Board */
+        .puzzle-board {
+            width: 456px;
+            height: 456px;
+            background: #0b162c;
+            border: 4px solid #1e293b;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            overflow: hidden; /* Prevent tiles from spilling out */
+        }
+
+        /* Individual Puzzle Tile */
+        .tile {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            background-size: 450px 450px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: top 0.2s ease, left 0.2s ease, filter 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .tile:hover {
+            filter: brightness(1.1);
+        }
+
+        .tile.empty {
+            opacity: 0;
+            pointer-events: none;
+            border: none;
+            box-shadow: none;
+        }
+        
+        .tile.win-reveal {
+            opacity: 1 !important;
+            border: none !important;
+        }
+
+        /* Dialog overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 37, 71, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            z-index: 10;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .overlay h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        .overlay p {
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 500px;
+            margin-bottom: 25px;
+            color: #e2e8f0;
+        }
+
+        .career-highlights {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        .career-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 14px;
+            border-radius: 6px;
+        }
+        .career-card strong {
+            color: #63b3ed;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .career-card span {
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+        
+        /* Custom File Input Styling */
+        .file-upload-wrapper {
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        .file-upload-label {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            color: #a0aec0;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px dashed rgba(255,255,255,0.3);
+            transition: all 0.2s;
+        }
+        .file-upload-label:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        #imageInput {
+            display: none;
+        }
+
+        /* Responsiveness for tablet landscape */
+        @media (max-width: 960px) {
+            .game-container {
+                flex-direction: column;
+                max-width: 680px;
+            }
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                padding: 20px;
+                align-items: center;
+                gap: 20px;
+            }
+            .logo-area, .mission-box, .career-highlights, .file-upload-wrapper { display: none; }
+            .timer-section { margin: 0; padding: 10px 20px; }
+            .timer-display { font-size: 32px; }
+            .btn { width: auto; margin-bottom: 0; }
+            .main-game { padding: 20px; }
+            .preview-img { width: 100px; height: 100px; }
+            .puzzle-board { width: 360px; height: 360px; }
+            .tile { width: 120px; height: 120px; background-size: 360px 360px;}
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" style="position: relative;">
+        <!-- End Game Screen (Win) -->
+        <div class="overlay" id="win-screen">
+            <h2>🎉 挑戰成功！鐵仔修復完成</h2>
+            <p>你只用了 <span id="finish-time" style="color:#ffd700; font-weight:bold;">0</span> 秒！卓越的觀察力與邏輯，正是鐵路維修工程師不可或缺的核心天賦。一條安全運作的鐵路，全賴以下專業團隊精準協作：</p>
+            <div class="career-highlights">
+                <div class="career-card">
+                    <strong>軌道及土木工程師</strong>
+                    <span>規劃、建造及確保路軌結構絕對安全穩定。</span>
+                </div>
+                <div class="career-card">
+                    <strong>鐵路車輛維修工程師</strong>
+                    <span>運用智能監測，日夜維護列車的機械與動力系統。</span>
+                </div>
+                <div class="career-card">
+                    <strong>訊號及通訊系統工程師</strong>
+                    <span>守護鐵路「大腦」，精密計算和控制列車班次。</span>
+                </div>
+                <div class="career-card">
+                    <strong>電力工程師</strong>
+                    <span>管理全線高壓配電網，提供源源不絕的牽引動力。</span>
+                </div>
+            </div>
+            <button class="btn" style="width: auto;" onclick="resetGame()">再挑戰一次</button>
+        </div>
+
+        <!-- End Game Screen (Lose) -->
+        <div class="overlay" id="lose-screen">
+            <h2 style="color: #ff4d4d;">⏱️ 時間到！再接再厲</h2>
+            <p>維修工程講求精準與效率，在突發狀況下更需要冷靜應對。不要氣餒，重新調整策略，再試一次吧！</p>
+            <button class="btn" style="width: auto;" onclick="resetGame()">重新開始</button>
+        </div>
+
+        <!-- Sidebar Left -->
+        <div class="sidebar">
+            <div>
+                <div class="logo-area">
+                    <div class="logo-text">
+                        <h1>港鐵九宮格解密挑戰</h1>
+
+                    </div>
+                </div>
+                <div class="mission-box">
+                    <h3>鐵仔維修任務：</h3>
+                    <p>請在 1 分鐘內，透過滑動（點擊）方塊，將圖案恢復原狀！</p>
+                </div>
+            </div>
+
+            <div>
+                <div class="timer-section">
+                    <div class="timer-label">剩餘時間 REMAINING</div>
+                    <div class="timer-display" id="timer">01:00</div>
+                </div>
+                <button class="btn" id="action-btn" onclick="toggleStart()">開始挑戰</button>
+                
+                <button class="btn" id="hint-btn" onclick="toggleHint()" style="background: #ffffff; color: #1b3d6d; border: 2px solid #cbd5e1;" disabled>💡 顯示數字提示</button>
+                
+                <button class="btn secondary" onclick="cheatWin()" style="font-size:12px; padding: 6px;">測試用：直接過關</button>
+                
+                <!-- 圖片上傳區塊 -->
+                <div class="file-upload-wrapper">
+                    <label for="imageInput" class="file-upload-label">
+                        📁 點此更換自訂圖片 (JPEG/PNG)
+                    </label>
+                    <input type="file" id="imageInput" accept="image/jpeg, image/png">
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace Right -->
+        <div class="main-game">
+            
+            <div class="preview-image-container">
+                <div class="preview-title">目標圖案 Target</div>
+                <!-- 預設圖片 (這是一張用 Canvas 生成的預設圖案，如果載入自訂圖片會替換掉它) -->
+                <img id="preview-img" class="preview-img" src="" alt="目標圖案">
+            </div>
+            
+            <div class="puzzle-board" id="board">
+                <!-- Tiles generated by JS -->
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🛠️ 自訂圖片設定 (Custom Image Setting)
+        // ==========================================
+        // 如果你想寫死一張特定的圖片網址，請修改下方的 DEFAULT_IMAGE_URL
+        // 例如： const DEFAULT_IMAGE_URL = "https://www.example.com/my-mtr-map.jpg";
+        // 注意：由於這是 1:1 的九宮格，請盡量使用正方形的圖片，否則會被自動裁切 (cover)。
+        // ==========================================
+        let DEFAULT_IMAGE_URL = "Alarm.png"; 
+        
+        // Game Settings
+        const GRID_SIZE = 3;
+        const TILE_COUNT = GRID_SIZE * GRID_SIZE;
+        const TIME_LIMIT = 60; // 60 秒
+        
+        let tileSize = 150; // 預設 150px
+        
+        let tiles = [];
+        let emptySlotIndex = TILE_COUNT - 1; // 預設右下角為空格
+        
+        let timerInterval = null;
+        let timeLeft = TIME_LIMIT;
+        let gameActive = false;
+        
+        let currentImageUrl = '';
+
+        // DOM Elements
+        const boardEl = document.getElementById('board');
+        const previewImgEl = document.getElementById('preview-img');
+        const imageInput = document.getElementById('imageInput');
+
+        // 1. 初始化圖片
+        function initImage() {
+            if (DEFAULT_IMAGE_URL) {
+                currentImageUrl = DEFAULT_IMAGE_URL;
+                previewImgEl.src = currentImageUrl;
+                initBoard(false);
+            } else {
+                // 如果沒有提供預設網址，就用 Canvas 畫一張工程風的預設圖
+                generateDefaultCanvasImage();
+            }
+        }
+
+        // 用 Canvas 生成一張預設圖案
+        function generateDefaultCanvasImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 450;
+            canvas.height = 450;
+            const ctx = canvas.getContext('2d');
+
+            // 畫背景
+            ctx.fillStyle = '#0f2244';
+            ctx.fillRect(0, 0, 450, 450);
+            
+            // 畫網格
+            ctx.strokeStyle = 'rgba(30, 144, 255, 0.3)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<=450; i+=30) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 450); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(450, i); ctx.stroke();
+            }
+            
+            // 畫一個大齒輪和路軌的抽象圖案
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(225, 225, 100, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#e2231a';
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(50, 400); ctx.lineTo(400, 50); ctx.stroke();
+            
+            ctx.strokeStyle = '#005da5';
+            ctx.beginPath(); ctx.moveTo(50, 225); ctx.lineTo(400, 225); ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('EEx', 225, 180);
+            ctx.fillText('GAME', 225, 300);
+
+            currentImageUrl = canvas.toDataURL();
+            previewImgEl.src = currentImageUrl;
+            
+            initBoard(false);
+        }
+
+        // 處理使用者上傳圖片
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentImageUrl = event.target.result;
+                    previewImgEl.src = currentImageUrl;
+                    resetGame(); // 載入新圖後重置遊戲
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 2. 初始化棋盤
+        function initBoard(shuffle = false) {
+            boardEl.innerHTML = '';
+            tiles = [];
+            
+            // 為了響應式，檢查螢幕寬度來決定 tile 大小
+            if (window.innerWidth <= 960) {
+                tileSize = 120;
+            } else {
+                tileSize = 150;
+            }
+
+            // 創建 9 個格子
+            for (let i = 0; i < TILE_COUNT; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.id = `tile-${i}`;
+                
+                if (i === TILE_COUNT - 1) {
+                    tile.classList.add('empty'); // 最後一個是空格
+                } else {
+                    tile.style.backgroundImage = `url(${currentImageUrl})`;
+                    
+                    // 計算背景圖片的位置 (background-position)
+                    const row = Math.floor(i / GRID_SIZE);
+                    const col = i % GRID_SIZE;
+                    tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
+                    
+                    const hintSpan = document.createElement('span');
+                    hintSpan.className = 'hint-number';
+                    hintSpan.innerText = i + 1; 
+                    tile.appendChild(hintSpan);
+                }
+
+                // 初始位置
+                const initRow = Math.floor(i / GRID_SIZE);
+                const initCol = i % GRID_SIZE;
+                tile.style.top = `${initRow * tileSize}px`;
+                tile.style.left = `${initCol * tileSize}px`;
+
+                // 儲存狀態
+                const tileObj = {
+                    element: tile,
+                    correctIndex: i,
+                    currentIndex: i
+                };
+                tiles.push(tileObj);
+
+                // 點擊事件
+                tile.addEventListener('click', () => handleTileClick(tileObj));
+                
+                boardEl.appendChild(tile);
+            }
+
+            if (shuffle) {
+                shuffleBoard();
+            }
+        }
+
+        // 3. 打亂棋盤 (確保有解)
+        function shuffleBoard() {
+            // 從完成狀態開始，隨機移動 N 步來打亂，這樣保證一定有解
+            const SHUFFLE_MOVES = 100;
+            let lastEmptyIndex = emptySlotIndex;
+            
+            for (let i = 0; i < SHUFFLE_MOVES; i++) {
+                const validMoves = getValidMoves(emptySlotIndex);
+                // 避免走回頭路
+                const filteredMoves = validMoves.filter(index => index !== lastEmptyIndex);
+                
+                // 隨機選一個可以移動的方塊
+                const moveToIndex = filteredMoves.length > 0 
+                    ? filteredMoves[Math.floor(Math.random() * filteredMoves.length)]
+                    : validMoves[0];
+
+                // 在數據層面交換位置 (不觸發動畫)
+                swapTilesData(moveToIndex, emptySlotIndex);
+                lastEmptyIndex = emptySlotIndex;
+                emptySlotIndex = moveToIndex;
+            }
+            
+            // 打亂後，更新畫面上方塊的位置
+            updateBoardUI();
+        }
+
+        // 取得當前空格可以移動的相鄰位置
+        function getValidMoves(emptyIndex) {
+            const validMoves = [];
+            const row = Math.floor(emptyIndex / GRID_SIZE);
+            const col = emptyIndex % GRID_SIZE;
+
+            if (row > 0) validMoves.push(emptyIndex - GRID_SIZE); // 上
+            if (row < GRID_SIZE - 1) validMoves.push(emptyIndex + GRID_SIZE); // 下
+            if (col > 0) validMoves.push(emptyIndex - 1); // 左
+            if (col < GRID_SIZE - 1) validMoves.push(emptyIndex + 1); // 右
+
+            return validMoves;
+        }
+
+        // 交換兩個方塊的數據
+        function swapTilesData(indexA, indexB) {
+            const tileA = tiles.find(t => t.currentIndex === indexA);
+            const tileB = tiles.find(t => t.currentIndex === indexB);
+            
+            tileA.currentIndex = indexB;
+            tileB.currentIndex = indexA;
+        }
+
+        // 更新畫面
+        function updateBoardUI() {
+            tiles.forEach(t => {
+                const row = Math.floor(t.currentIndex / GRID_SIZE);
+                const col = t.currentIndex % GRID_SIZE;
+                t.element.style.top = `${row * tileSize}px`;
+                t.element.style.left = `${col * tileSize}px`;
+            });
+        }
+
+        // 4. 點擊與移動邏輯
+        function handleTileClick(clickedTileObj) {
+            if (!gameActive) return;
+
+            // 檢查點擊的方塊是否與空格相鄰
+            const validMoves = getValidMoves(emptySlotIndex);
+            
+            if (validMoves.includes(clickedTileObj.currentIndex)) {
+                // 執行交換
+                const oldEmptyIndex = emptySlotIndex;
+                emptySlotIndex = clickedTileObj.currentIndex;
+                
+                swapTilesData(clickedTileObj.currentIndex, oldEmptyIndex);
+                updateBoardUI();
+
+                // 檢查是否獲勝 (加入短暫延遲讓最後一塊動畫播完)
+                setTimeout(() => {
+                    checkWinCondition();
+                }, 250);
+            }
+        }
+
+        // 5. 遊戲流程與計時器
+        function toggleStart() {
+            if (gameActive) {
+                resetGame();
+            } else {
+                gameActive = true;
+                document.getElementById('action-btn').innerText = '放棄重設';
+                document.getElementById('action-btn').style.background = '#e2231a';
+                document.getElementById('action-btn').style.color = '#ffffff';
+                
+                document.getElementById('hint-btn').disabled = false;
+                
+                // 開始打亂
+                initBoard(true); 
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            timeLeft = TIME_LIMIT;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 10) {
+                    document.getElementById('timer').classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer').innerText = formatted;
+        }
+
+        function checkWinCondition() {
+            // 檢查是否所有方塊的 currentIndex 都等於 correctIndex
+            const isWin = tiles.every(t => t.currentIndex === t.correctIndex);
+            
+            if (isWin) {
+                // 將空格顯示出來完成最後一塊圖案
+                const emptyTile = tiles.find(t => t.correctIndex === TILE_COUNT - 1).element;
+                emptyTile.classList.add('win-reveal');
+                emptyTile.style.backgroundImage = `url(${currentImageUrl})`;
+                emptyTile.style.backgroundPosition = `-${(GRID_SIZE-1) * tileSize}px -${(GRID_SIZE-1) * tileSize}px`;
+                
+                // 去除所有格子的邊框以顯示完整圖片
+                tiles.forEach(t => t.element.style.border = 'none');
+                
+                endGame(true);
+            }
+        }
+
+        function endGame(isWin) {
+            clearInterval(timerInterval);
+            gameActive = false;
+            
+            document.getElementById('hint-btn').disabled = true;
+            document.getElementById('board').classList.remove('board-show-hint');
+            document.getElementById('hint-btn').innerText = '💡 顯示數字提示';
+            
+            if (isWin) {
+                const scoreTime = TIME_LIMIT - timeLeft;
+                document.getElementById('finish-time').innerText = scoreTime;
+                
+                // 短暫延遲顯示恭喜畫面，讓玩家看清楚完整拼圖
+                setTimeout(() => {
+                    document.getElementById('win-screen').classList.add('active');
+                }, 800);
+            } else {
+                document.getElementById('lose-screen').classList.add('active');
+            }
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            gameActive = false;
+            timeLeft = TIME_LIMIT;
+            emptySlotIndex = TILE_COUNT - 1; // 重設空格位置
+            
+            document.getElementById('timer').classList.remove('warning');
+            document.getElementById('timer').innerText = '01:00';
+            document.getElementById('action-btn').innerText = '開始挑戰';
+            document.getElementById('action-btn').style.background = '#ffd700';
+            document.getElementById('action-btn').style.color = '#0f2547';
+            
+            const hintBtn = document.getElementById('hint-btn');
+            hintBtn.innerText = '💡 顯示數字提示';
+            hintBtn.disabled = true;
+            document.getElementById('board').classList.remove('board-show-hint');
+            
+            document.getElementById('win-screen').classList.remove('active');
+            document.getElementById('lose-screen').classList.remove('active');
+            
+            // 恢復初始排序好的狀態
+            initBoard(false);
+        }
+
+        // 顯示/隱藏數字提示
+        function toggleHint() {
+            if (!gameActive) return;
+            const board = document.getElementById('board');
+            const hintBtn = document.getElementById('hint-btn');
+            
+            // 切換棋盤的 class 決定是否顯示數字
+            board.classList.toggle('board-show-hint');
+            
+            // 更改按鈕文字給予反饋
+            if (board.classList.contains('board-show-hint')) {
+                hintBtn.innerText = '👀 隱藏數字提示';
+            } else {
+                hintBtn.innerText = '💡 顯示數字提示';
+            }
+        }
+
+        // 測試用：直接過關
+        function cheatWin() {
+            if(!gameActive) return;
+            tiles.forEach(t => {
+                t.currentIndex = t.correctIndex;
+            });
+            emptySlotIndex = TILE_COUNT - 1;
+            updateBoardUI();
+            setTimeout(checkWinCondition, 300);
+        }
+
+        // 監聽視窗大小改變，重新計算 tile 大小
+        window.addEventListener('resize', () => {
+            if (!gameActive) {
+                initBoard(false);
+            }
+        });
+
+        // Initialize on load
+        window.onload = () => {
+            initImage();
+        };
+    </script>
+</body>
+</html>
